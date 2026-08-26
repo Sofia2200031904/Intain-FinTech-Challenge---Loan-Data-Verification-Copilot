@@ -1,0 +1,12 @@
+# Local SQLite development (supports current CPython releases, including 3.14).
+fastapi>=0.115
+uvicorn[standard]>=0.34
+pymongo>=4.10
+pydantic>=2.12
+PyJWT>=2.10
+passlib[bcrypt]>=1.7
+pandas>=3.0
+openpyxl>=3.1
+python-multipart>=0.0.20
+openai>=1.58
+pytest>=8.0
