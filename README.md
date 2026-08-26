@@ -194,12 +194,4 @@ Admin governs → Reviewer decides → Viewer verifies
 
 It covers manual login, deterministic validation, AI explanation, human correction, re-validation, record history, SHA-256 integrity, audit events, viewer transparency, and export.
 
-## Deployment direction
 
-Use a private GitHub repository with:
-
-- MongoDB Atlas for production MongoDB.
-- Render or Railway for the FastAPI backend.
-- Vercel for the React frontend.
-
-Set production environment variables in the hosting dashboards; never commit secrets. At minimum configure `MONGODB_URI`, `JWT_SECRET`, and the frontend `VITE_API_URL`.
