@@ -27,4 +27,4 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
-demo_video/preview.png
+demo_video/preview*.png

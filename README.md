@@ -202,7 +202,7 @@ Admin governs → Reviewer decides → Viewer verifies
 
 It covers manual login, deterministic validation, AI explanation, human correction, re-validation, record history, SHA-256 integrity, audit events, viewer transparency, and export.
 
-A 72-second narration-ready overview is included at
+A 93-second narration-ready overview is included at
 [demo_video/loan_verification_copilot_demo.mp4](demo_video/loan_verification_copilot_demo.mp4).
 It can be regenerated with `python demo_video/create_demo_video.py` after
 installing `imageio-ffmpeg`.

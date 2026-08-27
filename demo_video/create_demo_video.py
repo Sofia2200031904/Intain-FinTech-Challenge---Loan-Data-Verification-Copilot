@@ -46,9 +46,9 @@ def scene_upload():
  footer(d,'Every record keeps its raw source evidence before normalization.');return im
 def scene_profile():
  im,d=base('2. Profile and normalize','Understand the incoming tape before making any decisions.','ADMIN');panel(d,(50,205,1230,650),'Ingest & profile')
- cols=[('loan_id','0','4'),('borrower_name','0','4'),('loan_amount','0','4'),('interest_rate','1','4'),('origination_date','0','5'),('status','0','3'),('credit_score','0','5')]
- text(d,(90,265),'FIELD',15,MUTED,True);text(d,(700,265),'MISSING',15,MUTED,True);text(d,(930,265),'UNIQUE',15,MUTED,True)
- for i,(a,b,c) in enumerate(cols):y=305+i*44;d.line((85,y+27,1185,y+27),fill=LINE);text(d,(90,y),a,18);text(d,(730,y),b,18,('#b42318' if b!='0' else TEXT));text(d,(955,y),c,18)
+ cols=[('loan_id','string','0','4'),('borrower_name','string','0','4'),('loan_amount','number','0','4'),('interest_rate','number','1','4'),('origination_date','date','0','5'),('status','string','0','3'),('credit_score','number','0','5')]
+ text(d,(90,265),'FIELD',15,MUTED,True);text(d,(510,265),'TYPE',15,MUTED,True);text(d,(760,265),'MISSING',15,MUTED,True);text(d,(990,265),'UNIQUE',15,MUTED,True)
+ for i,(a,t,b,c) in enumerate(cols):y=305+i*44;d.line((85,y+27,1185,y+27),fill=LINE);text(d,(90,y),a,18);text(d,(510,y),t,18,BLUE);text(d,(790,y),b,18,('#b42318' if b!='0' else TEXT));text(d,(1015,y),c,18)
  footer(d,'Normalization standardizes field names, numbers, percentages, statuses and dates.');return im
 def scene_validate():
  im,d=base('3. Deterministic validation','Transparent rules detect and prioritize data-quality exceptions.','ADMIN')
@@ -63,26 +63,44 @@ def scene_review():
  panel(d,(735,205,1230,655),'Access controls');items=['Dataset assignment checked','Claim is atomic','Claim ownership enforced','Viewer remains read-only','Backend returns 403 / 409'];
  for i,s in enumerate(items):text(d,(775,285+i*58),'OK  '+s,20,'#15803d',i<3)
  footer(d,'A second reviewer cannot take over an exception that is already under review.');return im
+def scene_claim():
+ im,d=base('4. Claim the exception','The reviewer performs an explicit, atomic claim before making a decision.','REVIEWER')
+ panel(d,(110,205,1170,640),'Reviewer queue · LN002')
+ badge(d,985,230,'CRITICAL','#b42318');text(d,(150,285),'Interest rate must be between 0 and 35%',28,TEXT,True);text(d,(150,335),'Status',18,MUTED,True);badge(d,260,325,'OPEN','#b45309');text(d,(150,405),'Assigned reviewer',18,MUTED,True);text(d,(350,405),'reviewer@intain.demo',20,TEXT,True)
+ rounded(d,(790,500,1110,565),BLUE,r=9);text(d,(950,532),'Claim Exception',22,WHITE,True,'mm');text(d,(150,535),'Action:',18,MUTED,True);text(d,(245,535),'OPEN  →  UNDER REVIEW',22,BLUE,True)
+ footer(d,'The backend performs the status transition only when the exception is still open.');return im
+def scene_claimed():
+ im,d=base('5. Claim confirmed','The claimed exception now displays its reviewer identity and review status.','REVIEWER')
+ panel(d,(110,205,1170,640),'Exception evidence · LN002');badge(d,945,235,'UNDER REVIEW',BLUE);text(d,(150,290),'Interest rate',28,TEXT,True)
+ rows=[('Rule','rate_range'),('Actual value','85'),('Reviewer','reviewer@intain.demo'),('Claimed at','10:31:02'),('Record status','In Review')]
+ for i,(a,b) in enumerate(rows):y=350+i*48;text(d,(150,y),a,18,MUTED,True);text(d,(410,y),b,20,TEXT,b in ['reviewer@intain.demo','In Review'])
+ rounded(d,(810,525,1110,580),'#eef6ff',r=8);text(d,(960,552),'CLAIM OWNED',18,BLUE,True,'mm');footer(d,'A competing reviewer receives 409 Conflict and cannot decide this exception.');return im
 def scene_ai():
- im,d=base('5. AI-assisted explanation','Reviewer guidance is advisory and cannot change loan values.','REVIEWER');panel(d,(80,215,1200,640),'AI ASSISTED — HUMAN REVIEW REQUIRED')
+ im,d=base('6. AI-assisted explanation','Reviewer guidance is advisory and cannot change loan values.','REVIEWER');panel(d,(80,215,1200,640),'AI ASSISTED — HUMAN REVIEW REQUIRED')
  text(d,(120,280),'Explanation',22,BLUE,True);text(d,(120,325),"The deterministic 'rate_range' rule flagged an interest rate of 85%.",22);text(d,(120,365),'This may affect servicing, pricing and downstream reporting.',22)
  text(d,(120,440),'Suggested review',22,BLUE,True);text(d,(120,485),'Check the source document for the contracted interest rate.',22);text(d,(120,525),'Correct it only when evidence supports the change; otherwise reject with a reason.',22)
  rounded(d,(930,560,1155,610),'#eef6ff',r=8);text(d,(1042,585),'NO AUTO-CHANGE',15,BLUE,True,'mm');footer(d,'The LLM explains; deterministic revalidation controls the final status.');return im
 def scene_correct():
- im,d=base('6. Correct and revalidate','Every reviewer decision requires a reason and produces traceable evidence.','REVIEWER');panel(d,(210,195,1070,655),'Correction & revalidation')
+ im,d=base('7. Correct and revalidate','Every reviewer decision requires a reason and produces traceable evidence.','REVIEWER');panel(d,(210,195,1070,655),'Correction & revalidation')
  fields=[('Loan ID','LN002'),('Field','interest_rate'),('Current value','85'),('Corrected value','8.5'),('Reason','Confirmed from signed source document')]
  for i,(a,b) in enumerate(fields):y=255+i*62;text(d,(260,y),a,18,MUTED,True);rounded(d,(500,y-10,1015,y+35),'#fbfcfe',LINE,r=6);text(d,(520,y+10),b,18,TEXT,False,'lm')
  rounded(d,(700,575,1015,625),BLUE,r=8);text(d,(857,600),'Save & Revalidate',18,WHITE,True,'mm');footer(d,'The corrected record is normalized and all applicable deterministic rules run again.');return im
+def scene_result():
+ im,d=base('8. Revalidation result','The correction passes its deterministic rule and completes the record lifecycle.','REVIEWER')
+ panel(d,(120,205,1160,635),'Correction result · LN002');text(d,(175,280),'interest_rate',18,MUTED,True);text(d,(430,280),'85',28,'#b42318',True);text(d,(520,280),'→',28,MUTED,True);text(d,(590,280),'8.5',28,'#15803d',True)
+ results=[('VALIDATION','PASSED','#15803d'),('EXCEPTION','RESOLVED',BLUE),('RECORD','VERIFIED','#15803d')]
+ for i,(a,b,c) in enumerate(results):y=365+i*72;text(d,(175,y),a,18,MUTED,True);rounded(d,(430,y-14,750,y+35),c,r=22);text(d,(590,y+10),b,18,WHITE,True,'mm')
+ rounded(d,(820,365,1085,515),'#ecfdf3','#86efac',r=14);text(d,(952,405),'0',52,'#15803d',True,'mm');text(d,(952,470),'open exceptions',18,'#15803d',True,'mm');footer(d,'A record is Verified only when no open or under-review exceptions remain.');return im
 def scene_audit():
- im,d=base('7. Hash, history and audit trail','The system preserves who changed what, why, when and with what result.','VIEWER');panel(d,(50,205,1230,650),'Record history · LN002')
- text(d,(85,260),'SHA-256 integrity',18,MUTED,True);rounded(d,(85,295,1190,350),'#eef6ff',r=7);text(d,(105,322),'51a7d4…b0f2  →  c84e16…9d31',22,'#123a77',True,'lm')
+ im,d=base('9. Hash, history and audit trail','The system preserves who changed what, why, when and with what result.','VIEWER');panel(d,(50,205,1230,650),'Record history · LN002')
+ text(d,(85,250),'Previous hash',15,MUTED,True);rounded(d,(85,280,520,330),'#fff1f2',r=7);text(d,(105,305),'a83f21c0...91c',20,'#9f1239',True,'lm');text(d,(590,305),'Correction + revalidation',18,MUTED,True,'mm');text(d,(590,337),'↓',28,BLUE,True,'mm');text(d,(730,250),'New hash',15,MUTED,True);rounded(d,(730,280,1190,330),'#ecfdf3',r=7);text(d,(750,305),'72bd9e41...4ef',20,'#166534',True,'lm')
  headers=['TIMESTAMP','ACTOR','ACTION','RESULT'];xs=[85,330,570,1030]
- for x,h in zip(xs,headers):text(d,(x,405),h,15,MUTED,True)
+ for x,h in zip(xs,headers):text(d,(x,395),h,15,MUTED,True)
  rows=[('10:31:02','reviewer@intain.demo','exception_under_review','recorded'),('10:32:18','reviewer@intain.demo','loan_record_corrected','passed'),('10:32:18','reviewer@intain.demo','record_revalidated','passed')]
- for i,row in enumerate(rows):y=450+i*55;d.line((80,y+32,1190,y+32),fill=LINE);[text(d,(x,y),v,17,('#15803d' if j==3 and v=='passed' else TEXT),j==3) for j,(x,v) in enumerate(zip(xs,row))]
+ for i,row in enumerate(rows):y=440+i*55;d.line((80,y+32,1190,y+32),fill=LINE);[text(d,(x,y),v,17,('#15803d' if j==3 and v=='passed' else TEXT),j==3) for j,(x,v) in enumerate(zip(xs,row))]
  footer(d,'Raw → normalized → verified provenance remains available to permitted users.');return im
 def scene_roles():
- im,d=base('8. Role-based workflow','Each persona sees only the controls needed for their responsibility.','RBAC')
+ im,d=base('10. Role-based workflow','Each persona sees only the controls needed for their responsibility.','RBAC')
  data=[('ADMIN','#155eef',['Upload and validate','Manage users and rules','Assign reviewers']),('REVIEWER','#7c3aed',['Assigned datasets only','Claim and decide','Correct and revalidate']),('VIEWER','#15803d',['Read-only visibility','Inspect history','Download reports'])]
  for i,(name,c,items) in enumerate(data):x=55+i*410;rounded(d,(x,220,x+370,625),WHITE,LINE);rounded(d,(x,x*0+220,x+370,285),c,r=14);text(d,(x+185,252),name,22,WHITE,True,'mm');
   # intentionally drawn below outside compact header
@@ -90,13 +108,19 @@ def scene_roles():
   x=55+i*410
   for j,s in enumerate(items):text(d,(x+38,345+j*62),'OK  '+s,20,TEXT,j==0)
  footer(d,'Frontend visibility supports usability; FastAPI authorization remains the security boundary.');return im
+def scene_export():
+ im,d=base('11. Export verified evidence','Download operational outputs directly from the completed dataset.','ADMIN')
+ panel(d,(70,205,1210,640),'Dataset reports · messy_loan_tape.xlsx')
+ exports=[('Export Verified Records','verified.csv','1 verified record','#15803d'),('Export Exceptions','exceptions.csv','7 findings with lifecycle status',BLUE),('Export Audit','audit.csv','complete actor and timestamp history','#7c3aed')]
+ for i,(label,file,detail,c) in enumerate(exports):y=270+i*105;rounded(d,(110,y,1170,y+80),'#fbfcfe',LINE,r=9);text(d,(145,y+25),label,20,TEXT,True);text(d,(145,y+54),detail,15,MUTED);rounded(d,(850,y+17,1130,y+63),c,r=7);text(d,(990,y+40),'Download '+file,15,WHITE,True,'mm')
+ rounded(d,(800,580,1170,620),'#ecfdf3',r=7);text(d,(985,600),'verified.csv downloaded',15,'#15803d',True,'mm');footer(d,'Exports preserve verified hashes, exception status, and audit evidence for downstream use.');return im
 def scene_finish():
  im=Image.new('RGB',(W,H),NAV);d=ImageDraw.Draw(im);text(d,(640,145),'VERIFIED DATA',28,'#60a5fa',True,'mm');text(d,(640,225),'From messy data to trusted records',52,WHITE,True,'mm');text(d,(640,300),'Upload → Profile → Validate → Review → Verify → Audit → Export',22,'#dbeafe',False,'mm')
  for i,(a,b) in enumerate([('Deterministic controls','Rules decide'),('Human accountability','Reviewers approve'),('Complete traceability','Hashes and audit events')]):x=125+i*350;rounded(d,(x,375,x+325,505),'#1f4a86',r=15);text(d,(x+162,415),a,18,WHITE,True,'mm');text(d,(x+162,460),b,18,'#bfdbfe',False,'mm')
  text(d,(640,600),'Loan Data Verification Copilot · Full Stack Track',18,'#93c5fd',True,'mm');return im
 
-SCENES=[scene_title,scene_upload,scene_profile,scene_validate,scene_review,scene_ai,scene_correct,scene_audit,scene_roles,scene_finish]
-DURATIONS=[5,7,7,8,8,8,8,8,7,6]
+SCENES=[scene_title,scene_upload,scene_profile,scene_validate,scene_claim,scene_claimed,scene_ai,scene_correct,scene_result,scene_audit,scene_roles,scene_export,scene_finish]
+DURATIONS=[5,7,8,7,7,7,7,7,8,8,6,7,6]
 def frames():
  for make,seconds in zip(SCENES,DURATIONS):
   frame=make()
