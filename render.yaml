@@ -2,6 +2,7 @@ services:
   - type: web
     name: loan-verification-copilot-api
     runtime: docker
+    plan: free
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     healthCheckPath: /health
