@@ -179,6 +179,16 @@ def profile(did:str,u=Depends(me)):
  rows=[x['normalized'] for x in db.loans.find({'dataset_id':did})]
  if not rows:raise HTTPException(404,'Dataset not found')
  f=pd.DataFrame(rows);return {'rows':len(f),'columns':[{'name':c,'missing':int(f[c].isna().sum()+(f[c]=='').sum() if f[c].dtype=='object' else f[c].isna().sum()),'unique':int(f[c].nunique())} for c in f.columns],'schema':{c:str(f[c].dtype) for c in f.columns}}
+@app.get('/datasets/{did}/records')
+def dataset_records(did:str,view:str='normalized',limit:int=500,u=Depends(me)):
+ dataset_access(did,u)
+ if view not in ['raw','normalized']:raise HTTPException(400,'View must be raw or normalized')
+ limit=max(1,min(limit,500))
+ loans=list(db.loans.find({'dataset_id':did}).sort('source_row').limit(limit))
+ if not loans and not db.datasets.find_one({'id':did}):raise HTTPException(404,'Dataset not found')
+ rows=[clean(x.get(view,{})|{'source_row':x.get('source_row')}) for x in loans]
+ columns=list(dict.fromkeys(key for row in rows for key in row))
+ return {'view':view,'columns':columns,'rows':rows,'limit':limit,'truncated':db.loans.count_documents({'dataset_id':did})>limit}
 @app.post('/datasets/{did}/normalize')
 def normalize(did:str,u=Depends(allow('admin'))):
  for l in db.loans.find({'dataset_id':did}):
@@ -310,7 +320,8 @@ def loan_history(loan_id:str,u=Depends(me)):
 @app.get('/datasets/{did}/export/{kind}')
 def export(did:str,kind:str,u=Depends(me)):
  dataset_access(did,u)
- if kind=='verified':rows=[{**x['normalized'],'record_hash':x['record_hash']} for x in db.loans.find({'dataset_id':did,'verified':True})]
+ if kind=='dataset':rows=[{**x['raw'],'source_row':x['source_row']} for x in db.loans.find({'dataset_id':did}).sort('source_row')]
+ elif kind=='verified':rows=[{**x['normalized'],'record_hash':x['record_hash']} for x in db.loans.find({'dataset_id':did,'verified':True})]
  elif kind=='exceptions':rows=[clean(x) for x in db.exceptions.find({'dataset_id':did})]
  elif kind=='audit':rows=[clean(x) for x in db.audits.find({'dataset_id':did}).sort('created_at',DESCENDING)]
  else:raise HTTPException(404,'Unknown export type')

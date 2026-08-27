@@ -56,3 +56,8 @@ def test_compound_rule_requires_a_real_affected_field(monkeypatch):
  with pytest.raises(HTTPException):mongo_main.correction_preview(exception,before,{"status":"Active"},set())
  after,changed,_=mongo_main.correction_preview(exception,before,{"loan_amount":25000},set())
  assert after["loan_amount"]==25000 and changed[0]["field"]=="loan_amount"
+
+def test_dataset_export_and_preview_views_are_declared():
+ routes={route.path for route in mongo_main.app.routes}
+ assert '/datasets/{did}/records' in routes
+ assert '/datasets/{did}/export/{kind}' in routes

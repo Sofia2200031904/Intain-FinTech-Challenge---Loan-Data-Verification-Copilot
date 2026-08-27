@@ -11,7 +11,8 @@ aside { position: fixed; top: 64px; bottom: 0; width: 230px; background: #fff; b
 aside label { font-weight: 600; font-size: 12px; }
 select { display: block; margin-top: 6px; width: 100%; padding: 9px; border: 1px solid #cfd9e8; }
 .content { margin-left: 230px; padding: 30px; max-width: 1400px; }
-.notice { background: #e8f0ff; color: #1553b5; padding: 12px; border-radius: 8px; margin-bottom: 16px; }
+.notice { position: fixed; z-index: 30; right: 22px; top: 78px; width: min(440px, calc(100vw - 44px)); background: #eaf8ef; color: #176b35; border: 1px solid #a7dfb8; padding: 13px 44px 13px 14px; border-radius: 8px; box-shadow: 0 12px 32px #102a5633; }
+.notice button { position: absolute; right: 8px; top: 4px; background: transparent; color: #176b35; font-size: 20px; padding: 4px 8px; }
 .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
 .card, .panel, .empty { background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; }
 .card small, .card strong { display: block; margin-top: 10px; }.card strong { font-size: 28px; }
@@ -28,6 +29,15 @@ table { width: 100%; border-collapse: collapse; } td, th { text-align: left; pad
 .file-input { display: none; }
 aside button { display: flex; align-items: center; justify-content: center; gap: 7px; }
 .admin-modal { width: min(780px, 100%); }
+.inline-error { background: #fff1f2; color: #b42318; border: 1px solid #fecdd3; border-radius: 6px; padding: 10px; margin: 10px 0 0; }
+.form-hint { background: #f8fafc; color: #475569; border-left: 3px solid #155eef; padding: 10px 12px; }
+.preview-modal { width: min(1200px, 96vw); }
+.preview-title { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 16px; }
+.preview-title h2,.preview-title p { margin: 0 0 6px; }
+.preview-title button { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+.table-scroll { max-height: 65vh; overflow: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
+.table-scroll th { position: sticky; top: 0; background: #eef4ff; z-index: 1; white-space: nowrap; }
+.table-scroll td { white-space: nowrap; }
 .admin-modal h3 { border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 22px; }
 .rule-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; padding: 9px 0; border-bottom: 1px solid #edf1f7; }
 .rule-row label { margin: 0; }
