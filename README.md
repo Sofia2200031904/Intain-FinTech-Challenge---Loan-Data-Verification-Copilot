@@ -184,6 +184,14 @@ Open `http://localhost:5173`.
 - Hashing: SHA-256 over deterministic normalized record JSON.
 - API documentation: `http://localhost:8000/docs`.
 
+MongoDB is the project's only supported persistence layer. Both
+`uvicorn app.main:app` and `uvicorn app.mongo_main:app` resolve to the same
+MongoDB application; there is no second SQL runtime.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the system and data-model diagrams,
+and use [SUBMISSION_CHECKLIST.md](SUBMISSION_CHECKLIST.md) for deployed
+end-to-end verification and evidence collection.
+
 ## Demo video
 
 Use [DEMO_VIDEO_SCRIPT.md](DEMO_VIDEO_SCRIPT.md) to record a 3–5 minute walkthrough:

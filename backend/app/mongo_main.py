@@ -9,13 +9,14 @@ from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPBearer,HTTPAuthorizationCredentials
 from passlib.context import CryptContext
 from pydantic import BaseModel,Field
-from pymongo import MongoClient,DESCENDING
+from pymongo import MongoClient,DESCENDING,ReturnDocument
 
 client=MongoClient(os.getenv('MONGODB_URI','mongodb://localhost:27017/loan_copilot'),serverSelectionTimeoutMS=5000)
 db=client.get_default_database()
 if db is None: db=client.loan_copilot
 app=FastAPI(title='Loan Data Verification Copilot',version='1.1.0-mongodb')
-app.add_middleware(CORSMiddleware,allow_origins=['*'],allow_methods=['*'],allow_headers=['*'])
+cors_origins=[x.strip() for x in os.getenv('CORS_ORIGINS','http://localhost:5173,http://127.0.0.1:5173').split(',') if x.strip()]
+app.add_middleware(CORSMiddleware,allow_origins=cors_origins,allow_methods=['*'],allow_headers=['*'])
 pwd=CryptContext(schemes=['bcrypt'],deprecated='auto');bearer=HTTPBearer()
 def now():return datetime.now(timezone.utc)
 def clean(x):x=dict(x);x.pop('_id',None);return x
@@ -108,6 +109,10 @@ def login(x:Login):
  u=db.users.find_one({'email':x.email,'enabled':True})
  if not u or not pwd.verify(x.password,u['password_hash']):raise HTTPException(401,'Incorrect email or password')
  return {'access_token':jwt.encode({'sub':u['email'],'exp':now()+timedelta(hours=8)},os.getenv('JWT_SECRET','dev-secret'),algorithm='HS256'),'user':{'email':u['email'],'role':u['role']}}
+@app.get('/health')
+def health():
+ client.admin.command('ping')
+ return {'status':'ok','database':'mongodb'}
 def make(name,frame,actor):
  did=str(uuid.uuid4());db.datasets.insert_one({'id':did,'name':name,'created_at':now(),'normalized':False,'validated':False,'uploaded_by':actor,'assigned_reviewers':['reviewer@intain.demo']})
  for i,row in frame.iterrows():
@@ -221,12 +226,17 @@ def verification_view(did:str,u=Depends(me)):
 def ai(eid:str,u=Depends(allow('admin','reviewer'))):
  x=db.exceptions.find_one({'id':eid});
  if not x:raise HTTPException(404,'Exception not found')
+ dataset_access(x['dataset_id'],u)
  e=f"The deterministic rule '{x['rule']}' flagged {x['field']}: {x['message']}. This can affect servicing, pricing, and reporting.";s=f"Review source evidence for {x['field']}. Correct only if supported; no data has been changed.";db.exceptions.update_one({'_id':x['_id']},{'$set':{'ai_explanation':e,'ai_suggestion':s}});note(x['dataset_id'],'ai_assistance_generated',u['email'],{'exception':eid},x['loan_id']);return {'explanation':e,'suggestion':s}
 @app.post('/exceptions/{eid}/start-review')
 def start_review(eid:str,u=Depends(allow('reviewer'))):
  ex=db.exceptions.find_one({'id':eid})
  if not ex:raise HTTPException(404,'Exception not found')
- db.exceptions.update_one({'_id':ex['_id'],'status':'open'},{'$set':{'status':'under_review','under_review_at':now(),'under_review_by':u['email']}})
+ dataset_access(ex['dataset_id'],u)
+ if ex.get('status')=='under_review' and ex.get('under_review_by')==u['email']:
+  return {'ok':True,'record_status':'In Review','already_claimed':True}
+ claimed=db.exceptions.find_one_and_update({'_id':ex['_id'],'status':'open'},{'$set':{'status':'under_review','under_review_at':now(),'under_review_by':u['email']}},return_document=ReturnDocument.AFTER)
+ if not claimed:raise HTTPException(409,'This exception is no longer available to claim')
  db.loans.update_one({'id':ex['loan_id']},{'$set':{'status':'In Review'}})
  note(ex['dataset_id'],'exception_under_review',u['email'],{'exception':eid,'field':ex['field'],'previous_status':'open','new_status':'under_review'},ex['loan_id'])
  return {'ok':True,'record_status':'In Review'}
@@ -234,6 +244,9 @@ def start_review(eid:str,u=Depends(allow('reviewer'))):
 def review(eid:str,x:Review,u=Depends(allow('reviewer'))):
  ex=db.exceptions.find_one({'id':eid});loan=db.loans.find_one({'id':ex['loan_id']}) if ex else None
  if not loan:raise HTTPException(404,'Exception not found')
+ dataset_access(ex['dataset_id'],u)
+ if ex.get('status')!='under_review' or ex.get('under_review_by')!=u['email']:
+  raise HTTPException(409,'Claim this exception before making a reviewer decision')
  if x.action not in ['approve','reject']:raise HTTPException(400,'Action must be approve or reject')
  reviewer_reason=(x.reason or x.note).strip()
  if len(reviewer_reason)<3:raise HTTPException(422,'A correction reason of at least 3 characters is required')
@@ -267,6 +280,7 @@ def review(eid:str,x:Review,u=Depends(allow('reviewer'))):
 def loan_history(loan_id:str,u=Depends(me)):
  loan=db.loans.find_one({'id':loan_id})
  if not loan:raise HTTPException(404,'Loan not found')
+ dataset_access(loan['dataset_id'],u)
  dataset=db.datasets.find_one({'id':loan['dataset_id']})
  audit=[]
  for item in db.audits.find({'loan_id':loan_id}).sort('created_at',DESCENDING):
