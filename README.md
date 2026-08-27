@@ -214,4 +214,11 @@ A 93-second narration-ready overview is included at
 It can be regenerated with `python demo_video/create_demo_video.py` after
 installing `imageio-ffmpeg`.
 
+## Deployment
+
+The repository is configured for MongoDB Atlas, a Render FastAPI service, and a
+Vercel frontend. Follow [DEPLOYMENT.md](DEPLOYMENT.md) for the exact environment
+variables, one-click Blueprint setup, CORS finalization, and production smoke
+test. Never commit the Atlas URI, JWT secret, or OpenAI API key.
+
 
