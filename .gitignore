@@ -7,6 +7,8 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+pytest-cache-files-*/
+.demo_video_deps/
 .venv/
 venv/
 
@@ -25,3 +27,4 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
+demo_video/preview.png
