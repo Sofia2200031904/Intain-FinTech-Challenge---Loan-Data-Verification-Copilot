@@ -201,7 +201,7 @@ end-to-end verification and evidence collection.
 
 ## Demo video
 
-Use [DEMO_VIDEO_SCRIPT.md](DEMO_VIDEO_SCRIPT.md) to record a 3–5 minute walkthrough:
+
 
 ```text
 Admin governs → Reviewer decides → Viewer verifies
