@@ -84,6 +84,23 @@ def findings(d,seen):
   except:add('outstanding_balance','closed_balance_numeric','Outstanding balance must be numeric for closed loans','high')
  if d.get('loan_id') in seen:add('loan_id','duplicate_loan_id','Duplicate loan identifier in this dataset','critical')
  return r
+def correction_preview(exception,before,changes,seen):
+ if not changes:raise HTTPException(422,'Provide at least one corrected field value')
+ affected={field.strip() for field in exception['field'].split(',') if field.strip()}
+ unknown=set(changes)-set(before)
+ if unknown:raise HTTPException(422,f"Unknown correction field(s): {', '.join(sorted(unknown))}")
+ if not affected.intersection(changes):raise HTTPException(422,f"Correction must change an affected field: {', '.join(sorted(affected))}")
+ after=norm({**before,**changes})
+ changed=[{'field':key,'original':before.get(key),'corrected':after.get(key)} for key in changes if before.get(key)!=after.get(key)]
+ if not changed:raise HTTPException(422,'The corrected value must be different from the current value')
+ current=findings(after,seen)
+ if any(field==exception['field'] and rule==exception['rule'] for field,rule,_,_ in current):
+  message=next(message for field,rule,message,_ in current if field==exception['field'] and rule==exception['rule'])
+  raise HTTPException(422,f'Correction rejected: {message}')
+ return after,changed,current
+def audit_change_values(changed):
+ if len(changed)==1:return changed[0]['field'],changed[0]['original'],changed[0]['corrected']
+ return ','.join(item['field'] for item in changed),{item['field']:item['original'] for item in changed},{item['field']:item['corrected'] for item in changed}
 class Login(BaseModel):email:str;password:str
 class Review(BaseModel):
  action:str
@@ -252,30 +269,30 @@ def review(eid:str,x:Review,u=Depends(allow('reviewer'))):
  if len(reviewer_reason)<3:raise HTTPException(422,'A correction reason of at least 3 characters is required')
  before=dict(loan['normalized']);previous_hash=loan['record_hash']
  if x.action=='reject':
+  affected=[field.strip() for field in ex['field'].split(',') if field.strip()]
+  evidence={field:before.get(field) for field in affected}
   db.exceptions.update_one({'_id':ex['_id']},{'$set':{'status':'rejected','reviewed_at':now(),'reviewed_by':u['email'],'reason':reviewer_reason,'notes':x.notes}})
   db.loans.update_one({'_id':loan['_id']},{'$set':{'verified':False,'status':'Rejected'}})
-  note(ex['dataset_id'],'exception_rejected',u['email'],{'loan_id':loan['id'],'field':ex['field'],'before':before.get(ex['field']),'after':before.get(ex['field']),'reason':reviewer_reason,'notes':x.notes,'previous_status':ex['status'],'new_status':'rejected','validation_result':'not_applicable','previous_hash':previous_hash,'new_hash':previous_hash},loan['id'])
+  note(ex['dataset_id'],'exception_rejected',u['email'],{'loan_id':loan['id'],'field':ex['field'],'before':evidence,'after':evidence,'changes':[],'reason':reviewer_reason,'notes':x.notes,'previous_status':ex['status'],'new_status':'rejected','validation_result':'not_applicable','previous_hash':previous_hash,'new_hash':previous_hash},loan['id'])
   return {'ok':True,'previous_hash':previous_hash,'hash':previous_hash,'validation_result':'not_applicable','exception_resolved':False,'record_status':'Rejected'}
- after=norm({**before,**x.changes});new_hash=digest(after)
- changed=[{'field':k,'original':before.get(k),'corrected':after.get(k)} for k in x.changes if before.get(k)!=after.get(k)]
- db.loans.update_one({'_id':loan['_id']},{'$set':{'normalized':after,'record_hash':new_hash,'status':'In Review'},'$push':{'corrections':{'at':now(),'reviewer':u['email'],'role':u['role'],'reason':reviewer_reason,'notes':x.notes,'changes':changed,'previous_hash':previous_hash,'new_hash':new_hash}}})
  # Re-run all deterministic rules applicable to this record. AI is never used here.
  seen={item['normalized'].get('loan_id') for item in db.loans.find({'dataset_id':ex['dataset_id'],'id':{'$ne':loan['id']}})}
- current=findings(after,seen)
- still_failing=any(field==ex['field'] and rule==ex['rule'] for field,rule,_,_ in current)
- new_status='under_review' if still_failing else 'resolved'
- db.exceptions.update_one({'_id':ex['_id']},{'$set':{'status':new_status,'reviewed_at':now(),'reviewed_by':u['email'],'reason':reviewer_reason,'notes':x.notes,'validation_result':'failed' if still_failing else 'passed'}})
+ after,changed,current=correction_preview(ex,before,x.changes,seen)
+ new_hash=digest(after);audit_field,audit_before,audit_after=audit_change_values(changed)
+ db.loans.update_one({'_id':loan['_id']},{'$set':{'normalized':after,'record_hash':new_hash,'status':'In Review'},'$push':{'corrections':{'at':now(),'reviewer':u['email'],'role':u['role'],'reason':reviewer_reason,'notes':x.notes,'changes':changed,'previous_hash':previous_hash,'new_hash':new_hash}}})
+ db.exceptions.update_one({'_id':ex['_id']},{'$set':{'status':'resolved','reviewed_at':now(),'reviewed_by':u['email'],'reason':reviewer_reason,'notes':x.notes,'validation_result':'passed'}})
  for field,rule,msg,severity in current:
   if field==ex['field'] and rule==ex['rule']:continue
   if not db.exceptions.find_one({'dataset_id':ex['dataset_id'],'loan_id':loan['id'],'field':field,'rule':rule,'status':{'$in':['open','under_review']}}):
-   db.exceptions.insert_one({'id':str(uuid.uuid4()),'dataset_id':ex['dataset_id'],'loan_id':loan['id'],'field':field,'rule':rule,'message':msg,'severity':severity,'status':'open','actual':after.get(field),'created_at':now()})
+   affected=[part.strip() for part in field.split(',') if part.strip()]
+   actual=after.get(field) if len(affected)==1 else {part:after.get(part) for part in affected}
+   db.exceptions.insert_one({'id':str(uuid.uuid4()),'dataset_id':ex['dataset_id'],'loan_id':loan['id'],'field':field,'rule':rule,'message':msg,'severity':severity,'status':'open','actual':actual,'created_at':now()})
  remaining=list(db.exceptions.find({'dataset_id':ex['dataset_id'],'loan_id':loan['id'],'status':{'$in':['open','under_review']}}))
  verification='Verified' if not remaining else 'Needs Review'
  db.loans.update_one({'_id':loan['_id']},{'$set':{'verified':verification=='Verified','status':verification}})
- validation_result='passed' if not remaining else 'failed'
- note(ex['dataset_id'],'loan_record_corrected',u['email'],{'loan_id':loan['id'],'field':ex['field'],'before':before.get(ex['field']),'after':after.get(ex['field']),'reason':reviewer_reason,'notes':x.notes,'previous_status':ex['status'],'new_status':new_status,'validation_result':validation_result,'previous_hash':previous_hash,'new_hash':new_hash},loan['id'])
- note(ex['dataset_id'],'record_revalidated',u['email'],{'result':validation_result,'open_issues':len(remaining)},loan['id'])
- return {'ok':True,'previous_hash':previous_hash,'hash':new_hash,'validation_result':validation_result,'exception_resolved':new_status=='resolved','record_status':verification}
+ note(ex['dataset_id'],'loan_record_corrected',u['email'],{'loan_id':loan['id'],'field':audit_field,'before':audit_before,'after':audit_after,'changes':changed,'reason':reviewer_reason,'notes':x.notes,'previous_status':ex['status'],'new_status':'resolved','validation_result':'passed','record_status':verification,'previous_hash':previous_hash,'new_hash':new_hash},loan['id'])
+ note(ex['dataset_id'],'record_revalidated',u['email'],{'result':'passed','resolved_exception':ex['id'],'record_status':verification,'open_issues':len(remaining)},loan['id'])
+ return {'ok':True,'previous_hash':previous_hash,'hash':new_hash,'validation_result':'passed','exception_resolved':True,'record_status':verification}
 @app.get('/loans/{loan_id}/history')
 def loan_history(loan_id:str,u=Depends(me)):
  loan=db.loans.find_one({'id':loan_id})

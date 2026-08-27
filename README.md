@@ -24,6 +24,7 @@ INGEST → PROFILE → NORMALIZE → VALIDATE → DETECT EXCEPTIONS
 - Provides AI explanations and suggested next steps without changing data automatically.
 - Requires human reviewer correction reason and optional reviewer notes.
 - Re-runs validation after a correction and recalculates the quality score.
+- Rejects unchanged or still-invalid corrections before any record, hash, correction-history, or audit mutation.
 - Stores before/after values, user actions, timestamps, validation results, and SHA-256 hashes.
 - Exports verified records, exception reports, and audit reports as CSV files.
 
@@ -137,6 +138,12 @@ For every correction, the backend stores:
 - Audit event linked to the record.
 
 A record becomes **Verified** only when no applicable open or under-review exceptions remain.
+
+The correction endpoint is also the backend enforcement boundary: only the
+assigned Reviewer who owns the active claim can submit a decision. A proposed
+correction must change an affected field and clear the selected deterministic
+rule, otherwise the API returns `422` and preserves the original record and
+hash.
 
 ## Demo accounts
 

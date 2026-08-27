@@ -17,7 +17,7 @@ or deployed workflow.
 - [ ] A second reviewer cannot claim or decide the claimed exception.
 - [ ] AI assistance explains the finding without modifying the record.
 - [ ] Reviewer supplies a reason, corrects a value, and triggers revalidation.
-- [ ] A failing correction remains unresolved.
+- [ ] An unchanged or failing correction returns HTTP 422 and creates no record, hash, correction-history, or audit mutation.
 - [ ] A passing correction resolves the finding.
 - [ ] Rejection requires a reason and creates an audit event.
 - [ ] A record with open or under-review exceptions is never Verified.
