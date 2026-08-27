@@ -4,7 +4,8 @@ uvicorn[standard]>=0.34
 pymongo>=4.10
 pydantic>=2.12
 PyJWT>=2.10
-passlib[bcrypt]>=1.7
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
 pandas>=3.0
 openpyxl>=3.1
 python-multipart>=0.0.20
