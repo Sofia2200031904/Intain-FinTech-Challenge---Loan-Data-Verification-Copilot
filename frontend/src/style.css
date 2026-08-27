@@ -38,6 +38,11 @@ aside button { display: flex; align-items: center; justify-content: center; gap:
 .table-scroll { max-height: 65vh; overflow: auto; border: 1px solid #e2e8f0; border-radius: 8px; }
 .table-scroll th { position: sticky; top: 0; background: #eef4ff; z-index: 1; white-space: nowrap; }
 .table-scroll td { white-space: nowrap; }
+footer { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 24px; padding: 18px 4px 4px; color: #64748b; border-top: 1px solid #dbe3ee; font-size: 12px; }
+footer nav { display: flex; gap: 14px; }
+footer a { display: inline-flex; align-items: center; gap: 5px; color: #1d5fe8; text-decoration: none; font-weight: 700; }
+footer a:hover { text-decoration: underline; }
+@media(max-width:850px){footer{align-items:flex-start;flex-direction:column}}
 .admin-modal h3 { border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 22px; }
 .rule-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; padding: 9px 0; border-bottom: 1px solid #edf1f7; }
 .rule-row label { margin: 0; }
