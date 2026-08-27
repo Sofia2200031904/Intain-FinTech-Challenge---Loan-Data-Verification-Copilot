@@ -207,18 +207,8 @@ Use [DEMO_VIDEO_SCRIPT.md](DEMO_VIDEO_SCRIPT.md) to record a 3–5 minute walkth
 Admin governs → Reviewer decides → Viewer verifies
 ```
 
-It covers manual login, deterministic validation, AI explanation, human correction, re-validation, record history, SHA-256 integrity, audit events, viewer transparency, and export.
 
-A 93-second narration-ready overview is included at
-[demo_video/loan_verification_copilot_demo.mp4](demo_video/loan_verification_copilot_demo.mp4).
-It can be regenerated with `python demo_video/create_demo_video.py` after
-installing `imageio-ffmpeg`.
 
-## Deployment
-
-The repository is configured for MongoDB Atlas, a Render FastAPI service, and a
-Vercel frontend. Follow [DEPLOYMENT.md](DEPLOYMENT.md) for the exact environment
-variables, one-click Blueprint setup, CORS finalization, and production smoke
-test. Never commit the Atlas URI, JWT secret, or OpenAI API key.
+https://github.com/user-attachments/assets/b970111e-74b5-4466-a115-f6014412d766
 
 
