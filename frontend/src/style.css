@@ -42,6 +42,7 @@ footer { display: flex; align-items: center; justify-content: space-between; gap
 footer nav { display: flex; gap: 14px; }
 footer a { display: inline-flex; align-items: center; gap: 5px; color: #1d5fe8; text-decoration: none; font-weight: 700; }
 footer a:hover { text-decoration: underline; }
+.login-form footer { margin-top: 22px; padding-top: 14px; flex-direction: column; align-items: flex-start; gap: 8px; }
 @media(max-width:850px){footer{align-items:flex-start;flex-direction:column}}
 .admin-modal h3 { border-top: 1px solid #e5e7eb; padding-top: 16px; margin-top: 22px; }
 .rule-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; padding: 9px 0; border-bottom: 1px solid #edf1f7; }
