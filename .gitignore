@@ -10,6 +10,7 @@ __pycache__/
 pytest-cache-files-*/
 .demo_video_deps/
 .render-cli/
+.atlas-cli/
 .venv/
 venv/
 
