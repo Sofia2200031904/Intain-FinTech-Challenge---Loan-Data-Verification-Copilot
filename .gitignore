@@ -9,6 +9,7 @@ __pycache__/
 .pytest_cache/
 pytest-cache-files-*/
 .demo_video_deps/
+.render-cli/
 .venv/
 venv/
 
